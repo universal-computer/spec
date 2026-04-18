@@ -1,0 +1,42 @@
+# Build Typst and publish
+name: Build Typst and publish
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v6
+    - uses: typst-community/setup-typst@v5
+
+    - name: Build all Typst to HTML
+      run: find . -name "*.typ" -execdir typst compile {} --format html --features html \;
+    - name: Build (docs) Typst to PDF
+      run: find docs -name "*.typ" -execdir typst compile {} --format pdf \;
+    - name: Upload artifact
+      id: upload
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: ${{ github.workspace }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
